@@ -1,36 +1,56 @@
-# [Project name]
+# Fable 5 IDE
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+AI yordamida kod yozuvchi to'liq muhit — loyihalar yarating, fayllar boshqaring, AI bilan muloqot qiling va ilovalarni to'g'ridan-to'g'ri brauzerda ishga tushiring.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/api-server run dev` — API server ishga tushirish (port 8080)
+- `pnpm --filter @workspace/code-assistant run dev` — Frontend ishga tushirish (port 23878)
+- `pnpm run typecheck` — Barcha paketlarni typecheck qilish
+- `pnpm run build` — Typecheck + build
+- `pnpm --filter @workspace/api-spec run codegen` — API hooks va Zod schemalarini qayta generatsiya qilish
+- `pnpm --filter @workspace/db run push` — DB schema o'zgarishlarini push qilish (faqat dev)
+- Kerakli env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
+- Auth: Replit Auth (OpenID Connect, express-session, connect-pg-simple)
+- AI: OpenRouter (OpenAI-compatible)
+- Frontend: React + Vite + Tailwind CSS v4 + shadcn/ui
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — OpenAPI spec (source of truth)
+- `lib/db/src/schema/` — Drizzle schema (projects, files, messages, secrets, auth)
+- `artifacts/api-server/src/routes/projects/index.ts` — Asosiy API routes
+- `artifacts/api-server/src/lib/auth.ts` — Replit Auth setup
+- `artifacts/api-server/src/lib/process-manager.ts` — Background process management
+- `artifacts/api-server/src/lib/shell-manager.ts` — Shell WebSocket handler
+- `artifacts/code-assistant/src/pages/workspace.tsx` — Asosiy IDE sahifasi
+- `lib/replit-auth-web/` — Frontend uchun auth hook
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Replit Auth orqali foydalanuvchi autentifikatsiyasi (OpenID Connect)
+- Loyiha fayllari PostgreSQL'da saqlanadi (fayl tizimi emas)
+- AI javoblari SSE (Server-Sent Events) orqali stream qilinadi
+- Ilovalar /tmp papkasiga materializatsiya qilinib, subprocess sifatida ishga tushiriladi
+- GitHub repo'lardan fayllar ZIP orqali import qilinadi
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Loyihalar yaratish va boshqarish
+- Fayllarni yaratish, tahrirlash, o'chirish
+- AI bilan muloqot (kod yozish, tuzatish)
+- GitHub repo klonlash
+- Ilovalarni to'g'ridan-to'g'ri brauzerda preview qilish
+- Shell orqali buyruqlar bajarish
 
 ## User preferences
 
@@ -38,7 +58,8 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- node-pty bu workspace'da ishlamaydi (Python yo'q) — shell-manager.ts `script` buyrug'idan foydalanadi
+- OPENROUTER_API_KEY yoki OPENAI_API_KEY env o'zgaruvchisi AI funksionalligi uchun kerak
 
 ## Pointers
 

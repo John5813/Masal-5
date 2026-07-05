@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "UzCoder — AI IDE"
+version = "1.0.0"
+id = "artifacts/code-assistant"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23878
+
+[services.development]
+run = "pnpm --filter @workspace/code-assistant run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/code-assistant", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/code-assistant/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23878"
+BASE_PATH = "/"
