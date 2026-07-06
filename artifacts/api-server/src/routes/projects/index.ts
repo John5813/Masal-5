@@ -889,7 +889,23 @@ router.get("/:id/run/status", async (req, res) => {
   const [proj] = await db.select({ id: projectsTable.id }).from(projectsTable).where(and(eq(projectsTable.id, id), eq(projectsTable.userId, userId)));
   if (!proj) { res.status(404).json({ error: "Not found" }); return; }
   const runStatus = getRunStatus(id);
-  res.json({ ...runStatus, running: runStatus.status === "running" || runStatus.status === "starting" });
+
+  // Detect Telegram bot: fetch bot info if token exists
+  let botInfo: { id: number; username: string; firstName: string } | null = null;
+  const [tokenSecret] = await db.select({ value: projectSecretsTable.value })
+    .from(projectSecretsTable)
+    .where(and(eq(projectSecretsTable.projectId, id), eq(projectSecretsTable.key, "TELEGRAM_BOT_TOKEN")));
+  if (tokenSecret) {
+    try {
+      const tgRes = await fetch(`https://api.telegram.org/bot${tokenSecret.value}/getMe`);
+      const tgData = await tgRes.json() as { ok: boolean; result?: { id: number; username: string; first_name: string } };
+      if (tgData.ok && tgData.result) {
+        botInfo = { id: tgData.result.id, username: tgData.result.username, firstName: tgData.result.first_name };
+      }
+    } catch { /* ignore */ }
+  }
+
+  res.json({ ...runStatus, running: runStatus.status === "running" || runStatus.status === "starting", botInfo });
 });
 
 router.post("/:id/run/start", async (req, res) => {

@@ -751,22 +751,26 @@ function SecretsPanel({ projectId }: { projectId: number }) {
 
 // ─── Run Panel ────────────────────────────────────────────────────────────────
 type RunStatus = "stopped" | "running" | "starting" | "stopping";
+interface BotInfo { id: number; username: string; firstName: string; }
+
 function RunPanel({ projectId }: { projectId: number }) {
-  const [status, setStatus]   = useState<RunStatus>("stopped");
-  const [logs, setLogs]       = useState<string[]>([]);
-  const [port, setPort]       = useState<number | null>(null);
-  const [, forceUpdate]       = useReducer((x: number) => x + 1, 0);
-  const logsEndRef            = useRef<HTMLDivElement>(null);
-  const esRef                 = useRef<EventSource | null>(null);
-  const iframeRef             = useRef<HTMLIFrameElement>(null);
+  const [status, setStatus]     = useState<RunStatus>("stopped");
+  const [logs, setLogs]         = useState<string[]>([]);
+  const [port, setPort]         = useState<number | null>(null);
+  const [botInfo, setBotInfo]   = useState<BotInfo | null>(null);
+  const [, forceUpdate]         = useReducer((x: number) => x + 1, 0);
+  const logsEndRef              = useRef<HTMLDivElement>(null);
+  const esRef                   = useRef<EventSource | null>(null);
+  const iframeRef               = useRef<HTMLIFrameElement>(null);
 
   // Poll run status on mount and after start/stop
   const pollStatus = useCallback(async () => {
     try {
       const res  = await fetch(`/api/projects/${projectId}/run/status`);
-      const data = await res.json() as { running: boolean; port?: number };
+      const data = await res.json() as { running: boolean; port?: number; botInfo?: BotInfo };
       setStatus(data.running ? "running" : "stopped");
       if (data.port) setPort(data.port);
+      setBotInfo(data.botInfo ?? null);
     } catch {}
   }, [projectId]);
 
@@ -814,34 +818,89 @@ function RunPanel({ projectId }: { projectId: number }) {
     setStatus("stopped"); setPort(null);
   };
 
-  const isRunning = status === "running";
+  const isRunning  = status === "running";
+  const isBot      = !!botInfo;
+  const isWeb      = !!port;
+  const isMiniApp  = isBot && isWeb;   // both token + HTTP port → Telegram Mini App
+  const projectType = isMiniApp ? "miniapp" : isBot ? "bot" : isWeb ? "web" : "unknown";
+
+  // ── Log renderer ─────────────────────────────────────────────────────────
+  const logLines = (maxH?: string) => (
+    <div className={`overflow-y-auto bg-[#0d0d1a] p-2 font-mono text-[10px] ${maxH ?? "flex-1"}`}>
+      {logs.length === 0
+        ? <span className="text-[#2a2a3a] italic">Log kutilmoqda…</span>
+        : logs.map((l, i) => (
+          <div key={i} className={`leading-5 whitespace-pre-wrap break-all ${
+            /error/i.test(l) ? "text-[#f7768e]" :
+            /warn/i.test(l)  ? "text-[#e0af68]" :
+            /\[SUCCESS\]/.test(l) ? "text-[#9ece6a]" : "text-[#565f89]"
+          }`}>{l}</div>
+        ))}
+      <div ref={logsEndRef} />
+    </div>
+  );
+
+  // ── Bot link card ─────────────────────────────────────────────────────────
+  const botCard = botInfo ? (
+    <div className="flex-shrink-0 mx-3 my-2 p-3 rounded-xl border border-[#7aa2f7]/30 bg-[#7aa2f7]/5">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-full bg-[#7aa2f7]/20 flex items-center justify-center flex-shrink-0 text-base">
+          🤖
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-[#c0caf5]">{botInfo.firstName}</p>
+          <p className="text-[10px] text-[#565f89]">@{botInfo.username}</p>
+        </div>
+        <a
+          href={`https://t.me/${botInfo.username}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold text-[#0d0d1a] transition-opacity hover:opacity-80 flex-shrink-0"
+          style={{ background: "linear-gradient(135deg,#7aa2f7,#bb9af7)" }}
+        >
+          Ochish ↗
+        </a>
+      </div>
+      {isMiniApp && (
+        <p className="text-[10px] text-[#e0af68] mt-2 flex items-center gap-1">
+          <span>⚡</span> Mini App + Bot — Telegramdan sinab ko'ring
+        </p>
+      )}
+    </div>
+  ) : null;
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-[#0a0a14]">
       {/* Toolbar */}
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[#1e1e2e] bg-[#0d0d1a] flex-shrink-0">
-        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isRunning ? "bg-[#9ece6a]" : status === "starting" || status === "stopping" ? "bg-[#e0af68] animate-pulse" : "bg-[#565f89]"}`} />
+        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+          isRunning ? "bg-[#9ece6a]" :
+          status === "starting" || status === "stopping" ? "bg-[#e0af68] animate-pulse" :
+          "bg-[#565f89]"
+        }`} />
         <span className="text-[10px] text-[#565f89] font-mono flex-1">
-          {status === "running" ? `Ishlaydi${port ? ` :${port}` : ""}` : status === "starting" ? "Boshlanmoqda…" : status === "stopping" ? "To'xtatilmoqda…" : "To'xtatildi"}
+          {status === "running"
+            ? projectType === "bot"     ? "Bot ishlaydi"
+            : projectType === "miniapp" ? `Mini App + Bot ishlaydi :${port}`
+            : `Ishlaydi :${port}`
+            : status === "starting"  ? "Boshlanmoqda…"
+            : status === "stopping"  ? "To'xtatilmoqda…"
+            : "To'xtatildi"}
         </span>
         {isRunning ? (
           <button onClick={() => void handleStop()}
             className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-medium rounded-lg bg-[#f7768e]/10 border border-[#f7768e]/30 text-[#f7768e] hover:bg-[#f7768e]/20 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="6" width="12" height="12" rx="2"/>
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
             To'xtat
           </button>
         ) : (
           <button onClick={() => void handleStart()} disabled={status === "starting"}
             className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-medium rounded-lg bg-[#9ece6a]/10 border border-[#9ece6a]/30 text-[#9ece6a] hover:bg-[#9ece6a]/20 transition-colors disabled:opacity-40">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="5,3 19,12 5,21"/>
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
             Yurgiz
           </button>
         )}
-        {isRunning && (
+        {isRunning && isWeb && (
           <button onClick={() => { if (iframeRef.current) iframeRef.current.src += ""; }}
             className="flex items-center gap-1 px-2.5 py-1 text-[10px] rounded-lg bg-[#1a1a2e] border border-[#2a2a3a] text-[#565f89] hover:text-[#a9b1d6] transition-colors">
             ↻ Yangilash
@@ -849,49 +908,65 @@ function RunPanel({ projectId }: { projectId: number }) {
         )}
       </div>
 
-      {/* Content area — split: logs top, preview bottom when running */}
-      {isRunning && port ? (
+      {/* ── Content area ── */}
+      {isRunning ? (
         <div className="flex flex-col flex-1 min-h-0">
-          {/* Live iframe */}
-          <div className="flex-1 min-h-0 bg-white border-b border-[#1e1e2e]">
-            <iframe
-              ref={iframeRef}
-              src={`${window.location.origin}/project-preview/${projectId}`}
-              className="w-full h-full border-0"
-              title="Live Preview"
-            />
-          </div>
-          {/* Logs strip */}
-          <div className="h-40 flex-shrink-0 overflow-y-auto bg-[#0d0d1a] p-2 font-mono text-[10px] text-[#565f89]">
-            {logs.length === 0
-              ? <span className="text-[#2a2a3a] italic">Log kutilmoqda…</span>
-              : logs.map((l, i) => (
-                <div key={i} className={`leading-5 ${l.includes("error") || l.includes("Error") ? "text-[#f7768e]" : l.includes("warn") ? "text-[#e0af68]" : "text-[#565f89]"}`}>
-                  {l}
-                </div>
-              ))}
-            <div ref={logsEndRef} />
-          </div>
+          {/* Bot-only: link card + logs */}
+          {projectType === "bot" && (
+            <>
+              {botCard}
+              {logLines()}
+            </>
+          )}
+
+          {/* Web or Mini App: iframe + bot card (if mini app) + log strip */}
+          {(projectType === "web" || projectType === "miniapp") && (
+            <>
+              <div className="flex-1 min-h-0 bg-white border-b border-[#1e1e2e]">
+                <iframe
+                  ref={iframeRef}
+                  src={`${window.location.origin}/project-preview/${projectId}`}
+                  className="w-full h-full border-0"
+                  title="Live Preview"
+                />
+              </div>
+              {isMiniApp && botCard}
+              <div className="h-32 flex-shrink-0 border-t border-[#1e1e2e]">
+                {logLines("h-32")}
+              </div>
+            </>
+          )}
+
+          {/* Unknown (no port, no bot token): just logs */}
+          {projectType === "unknown" && (
+            <>
+              <div className="px-3 py-2 flex-shrink-0">
+                <p className="text-[10px] text-[#e0af68]">⚠ HTTP port aniqlanmadi — server 9000-9999 oraliq portda tinglashi kerak</p>
+              </div>
+              {logLines()}
+            </>
+          )}
         </div>
       ) : (
+        /* Stopped state */
         <div className="flex flex-col flex-1 min-h-0">
-          {/* Logs full-height when stopped */}
           {logs.length > 0 ? (
-            <div className="flex-1 overflow-y-auto p-3 font-mono text-[10px] space-y-0.5">
-              {logs.map((l, i) => (
-                <div key={i} className={`leading-5 ${l.includes("error") || l.includes("Error") ? "text-[#f7768e]" : l.includes("warn") ? "text-[#e0af68]" : "text-[#565f89]"}`}>
-                  {l}
-                </div>
-              ))}
-              <div ref={logsEndRef} />
-            </div>
+            <>
+              {/* Show bot link even when stopped, if we know the bot */}
+              {botInfo && botCard}
+              {logLines()}
+            </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-8">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-[#1e1e2e]" viewBox="0 0 24 24" fill="currentColor">
                 <polygon points="5,3 19,12 5,21"/>
               </svg>
               <p className="text-sm text-[#3b3f5c]">Ilovani yurgizish uchun ▶ Yurgiz tugmasini bosing</p>
-              <p className="text-[10px] text-[#2a2a3a]">AI tayyorlagan server-kodni ishga tushiradi</p>
+              {botInfo ? (
+                <div className="w-full max-w-xs">{botCard}</div>
+              ) : (
+                <p className="text-[10px] text-[#2a2a3a]">AI tayyorlagan server-kodni ishga tushiradi</p>
+              )}
             </div>
           )}
         </div>
