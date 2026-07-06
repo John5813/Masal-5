@@ -480,7 +480,7 @@ function MenuItem({ icon, label, onClick, disabled, danger }: {
   );
 }
 
-function UserMenu({ userPlan, onOpenPayment }: { userPlan: UserPlanInfo | null; onOpenPayment: () => void }) {
+function UserMenu({ userPlan, onOpenPayment, alignRight }: { userPlan: UserPlanInfo | null; onOpenPayment: () => void; alignRight?: boolean }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -507,7 +507,7 @@ function UserMenu({ userPlan, onOpenPayment }: { userPlan: UserPlanInfo | null; 
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-2 w-64 bg-[#0d0d1a] border border-[#2a2a3a] rounded-xl shadow-2xl z-50 overflow-hidden">
+        <div className={`absolute top-full mt-2 w-64 bg-[#0d0d1a] border border-[#2a2a3a] rounded-xl shadow-2xl z-50 overflow-hidden ${alignRight ? "right-0" : "left-0"}`}>
 
           {/* User card */}
           <div className="px-4 py-3 border-b border-[#1e1e2e]">
@@ -578,23 +578,25 @@ function UserMenu({ userPlan, onOpenPayment }: { userPlan: UserPlanInfo | null; 
 
 // ─── Projects Panel ───────────────────────────────────────────────────────────
 function ProjectsPanel({
-  projects, activeProjectId, onSelect, onDelete, onNew, activeModelInfo, userPlan, onOpenPayment,
+  projects, activeProjectId, onSelect, onDelete, onNew, activeModelInfo, userPlan, onOpenPayment, mobileMode,
 }: {
   projects: { id: number; name: string }[]; activeProjectId: number | null;
   onSelect: (id: number) => void; onDelete: (id: number, e: React.MouseEvent) => void;
   onNew: () => void; activeModelInfo: typeof MODELS[0] | null;
-  userPlan: UserPlanInfo | null; onOpenPayment: () => void;
+  userPlan: UserPlanInfo | null; onOpenPayment: () => void; mobileMode?: boolean;
 }) {
   return (
     <div className="flex flex-col h-full bg-[#0d0d1a]">
       <div className="p-4 border-b border-[#1e1e2e]">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#7aa2f7]" />
-            <span className="text-xs font-bold tracking-widest text-[#7aa2f7]">UZCODER</span>
+        {!mobileMode && (
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#7aa2f7]" />
+              <span className="text-xs font-bold tracking-widest text-[#7aa2f7]">UZCODER</span>
+            </div>
+            <UserMenu userPlan={userPlan} onOpenPayment={onOpenPayment} />
           </div>
-          <UserMenu userPlan={userPlan} onOpenPayment={onOpenPayment} />
-        </div>
+        )}
         <button onClick={onNew}
           className="w-full py-2.5 px-3 text-sm bg-[#7aa2f7]/10 hover:bg-[#7aa2f7]/20 border border-[#7aa2f7]/30 rounded-lg text-[#7aa2f7] flex items-center gap-2 transition-colors font-medium">
           <span className="text-base leading-none">+</span> Yangi Loyiha
@@ -1420,7 +1422,7 @@ export default function WorkspacePage() {
       </div>
 
       {/* Input area */}
-      <div className="px-4 py-3 border-t border-[#1e1e2e] space-y-2">
+      <div className="flex-shrink-0 px-4 py-3 border-t border-[#1e1e2e] space-y-2">
         {/* Model selector */}
         <div className="relative">
           <button onClick={() => setShowModelPicker((v) => !v)}
@@ -1563,7 +1565,7 @@ export default function WorkspacePage() {
   ];
 
   return (
-    <div className="flex h-screen bg-[#0a0a14] text-[#c0caf5] text-sm overflow-hidden">
+    <div className="flex h-[100dvh] bg-[#0a0a14] text-[#c0caf5] text-sm overflow-hidden">
       {showNewProject && <NewProjectModal onClose={() => setShowNewProject(false)} onCreated={handleProjectCreated} />}
       {pendingSecretsRequest && (
         <SecretsRequestModal
@@ -1657,15 +1659,15 @@ export default function WorkspacePage() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               </a>
             )}
-            <UserMenu userPlan={userPlan} onOpenPayment={() => setShowPaymentModal(true)} />
+            <UserMenu userPlan={userPlan} onOpenPayment={() => setShowPaymentModal(true)} alignRight />
           </div>
         </div>
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden">
           {mobilePanel === "projects" ? (
             <ProjectsPanel projects={projects} activeProjectId={activeProjectId}
               onSelect={(id) => { handleSelectProject(id); setMobilePanel("chat"); }}
               onDelete={handleDeleteProject} onNew={() => setShowNewProject(true)} activeModelInfo={activeModelInfo}
-              userPlan={userPlan} onOpenPayment={() => setShowPaymentModal(true)} />
+              userPlan={userPlan} onOpenPayment={() => setShowPaymentModal(true)} mobileMode />
           ) : mobilePanel === "files" && activeProjectId ? (
             <FilesPanel {...filesPanelProps} />
           ) : mobilePanel === "chat" && activeProjectId ? chatPanel
