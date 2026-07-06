@@ -71,20 +71,34 @@ function safePath(base: string, filePath: string): string | null {
 }
 
 function getOpenRouter(): OpenAI {
-  const apiKey = process.env.OPENROUTER_API_KEY ?? process.env.OPENAI_API_KEY ?? "missing";
-  return new OpenAI({
-    baseURL: "https://openrouter.ai/api/v1",
-    apiKey,
-  });
+  // Support Replit AI Integrations proxy OR a direct user-provided key
+  const baseURL =
+    process.env.AI_INTEGRATIONS_OPENROUTER_BASE_URL ??
+    "https://openrouter.ai/api/v1";
+  const apiKey =
+    process.env.AI_INTEGRATIONS_OPENROUTER_API_KEY ??
+    process.env.OPENROUTER_API_KEY ??
+    "missing";
+  return new OpenAI({ baseURL, apiKey });
 }
 
-const DEFAULT_MODEL = "anthropic/claude-opus-4-5";
+const DEFAULT_MODEL = "anthropic/claude-sonnet-4.5";
 
 const ALLOWED_MODELS = new Set([
-  "anthropic/claude-opus-4-5",
-  "anthropic/claude-sonnet-4-5",
-  "anthropic/claude-opus-4",
+  // DeepSeek (free tier & paid)
   "deepseek/deepseek-chat-v3-0324",
+  "deepseek/deepseek-v3.2",
+  // Claude
+  "anthropic/claude-haiku-4.5",
+  "anthropic/claude-sonnet-4.5",
+  "anthropic/claude-opus-4.5",
+  // Gemini
+  "google/gemini-2.5-flash",
+  "google/gemini-2.5-pro",
+  // Grok
+  "x-ai/grok-4.20",
+  // Mistral
+  "mistralai/mistral-large-2512",
 ]);
 
 const TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
