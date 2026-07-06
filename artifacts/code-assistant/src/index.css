@@ -418,3 +418,55 @@
     inset: -1px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   UzCoder Light Theme — overrides for hardcoded dark palette
+   ═══════════════════════════════════════════════════════════════ */
+html.light {
+  /* ── Backgrounds ─────────────────────────────────── */
+  .bg-\[\#0a0a14\]  { background-color: #f4f7fc !important; }
+  .bg-\[\#0d0d1a\]  { background-color: #ffffff !important; }
+  .bg-\[\#12121e\]  { background-color: #eef1fb !important; }
+  .bg-\[\#1a1a2e\]  { background-color: #e8edf8 !important; }
+  .bg-\[\#1e1e2e\]  { background-color: #dde3f4 !important; }
+  .bg-\[\#2a2a3a\]  { background-color: #cdd5ec !important; }
+  .bg-\[\#565f89\]  { background-color: #8b96c4 !important; }
+  .bg-\[\#89b4fa\]  { background-color: #4d80f5 !important; }
+
+  /* ── Hover backgrounds ───────────────────────────── */
+  .hover\:bg-\[\#1a1a2e\]:hover { background-color: #dde4f6 !important; }
+  .hover\:bg-\[\#0d0d1a\]:hover { background-color: #f2f5fd !important; }
+  .hover\:bg-\[\#89b4fa\]:hover { background-color: #3d72f2 !important; }
+
+  /* ── Text colours ────────────────────────────────── */
+  .text-\[\#c0caf5\]  { color: #1a2050 !important; }
+  .text-\[\#a9b1d6\]  { color: #364072 !important; }
+  .text-\[\#565f89\]  { color: #5060a0 !important; }
+  .text-\[\#3b3f5c\]  { color: #6872a8 !important; }
+  .text-\[\#2a2a3a\]  { color: #8090c0 !important; }
+  .text-\[\#1e1e2e\]  { color: #9098c8 !important; }
+  .text-\[\#6e7191\]  { color: #6070a8 !important; }
+  /* Accent text — darken for light-bg contrast */
+  .text-\[\#9ece6a\]  { color: #3d8a00 !important; }
+  .text-\[\#e0af68\]  { color: #8a5a00 !important; }
+  .text-\[\#bb9af7\]  { color: #5530c8 !important; }
+  .text-\[\#f7768e\]  { color: #c01838 !important; }
+
+  /* ── Hover text ──────────────────────────────────── */
+  .hover\:text-\[\#a9b1d6\]:hover { color: #364072 !important; }
+  .hover\:text-\[\#f7768e\]:hover { color: #c01838 !important; }
+  .hover\:text-\[\#c0caf5\]:hover { color: #1a2050 !important; }
+
+  /* ── Borders ─────────────────────────────────────── */
+  .border-\[\#1e1e2e\]  { border-color: #dde3f4 !important; }
+  .border-\[\#2a2a3a\]  { border-color: #cdd5ec !important; }
+  .border-\[\#2a2a3e\]  { border-color: #cdd5ec !important; }
+  .border-\[\#565f89\]  { border-color: #8b96c4 !important; }
+
+  /* ── Placeholder text ────────────────────────────── */
+  .placeholder-\[\#565f89\]::placeholder { color: #8090c0 !important; }
+  .placeholder-\[\#3b3f5c\]::placeholder  { color: #9098c8 !important; }
+
+  /* ── Scrollbar (Webkit) ──────────────────────────── */
+  * { scrollbar-color: #cdd5ec #f4f7fc; }
+}

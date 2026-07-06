@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useReducer } from "react";
+import { useTheme } from "@/context/theme-context";
 import { SandpackLivePreview } from "@/components/sandpack-preview";
 import { ShellPanel } from "@/components/shell-panel";
 import { PaymentModal } from "@/components/payment-modal";
@@ -480,7 +481,88 @@ function MenuItem({ icon, label, onClick, disabled, danger }: {
   );
 }
 
-function UserMenu({ userPlan, onOpenPayment, alignRight }: { userPlan: UserPlanInfo | null; onOpenPayment: () => void; alignRight?: boolean }) {
+// ─── Settings Modal ───────────────────────────────────────────────────────────
+function SettingsModal({ onClose }: { onClose: () => void }) {
+  const { theme, setTheme } = useTheme();
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="relative w-full max-w-sm bg-[#0d0d1a] border border-[#2a2a3a] rounded-2xl shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e1e2e]">
+          <div className="flex items-center gap-2.5">
+            <span className="text-base">⚙️</span>
+            <span className="text-sm font-semibold text-[#c0caf5]">Sozlamalar</span>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#1a1a2e] text-[#565f89] hover:text-[#a9b1d6] transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        {/* Theme section */}
+        <div className="px-5 py-4 border-b border-[#1e1e2e]">
+          <p className="text-[10px] text-[#565f89] uppercase tracking-wider mb-3">Ko'rinish</p>
+          <div className="grid grid-cols-2 gap-2">
+            {(["dark", "light"] as const).map((t) => {
+              const active = theme === t;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setTheme(t)}
+                  className={`flex flex-col items-center gap-2.5 p-3 rounded-xl border transition-all ${
+                    active
+                      ? "border-[#7aa2f7] bg-[#7aa2f7]/10"
+                      : "border-[#2a2a3a] hover:border-[#565f89] hover:bg-[#1a1a2e]"
+                  }`}
+                >
+                  {/* Mini preview */}
+                  <div className={`w-full h-10 rounded-lg overflow-hidden border ${active ? "border-[#7aa2f7]/40" : "border-[#2a2a3a]"} flex`}>
+                    {t === "dark" ? (
+                      <>
+                        <div className="w-1/3 h-full bg-[#0d0d1a]" />
+                        <div className="flex-1 h-full bg-[#0a0a14] flex flex-col justify-end p-1 gap-0.5">
+                          <div className="h-1 w-3/4 rounded bg-[#1a1a2e]" />
+                          <div className="h-1 w-1/2 rounded bg-[#1a1a2e]" />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-1/3 h-full bg-white border-r border-gray-200" />
+                        <div className="flex-1 h-full bg-[#f4f7fc] flex flex-col justify-end p-1 gap-0.5">
+                          <div className="h-1 w-3/4 rounded bg-[#dde3f4]" />
+                          <div className="h-1 w-1/2 rounded bg-[#dde3f4]" />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm">{t === "dark" ? "🌙" : "☀️"}</span>
+                    <span className={`text-xs font-medium ${active ? "text-[#7aa2f7]" : "text-[#565f89]"}`}>
+                      {t === "dark" ? "Qorong'i" : "Yorug'"}
+                    </span>
+                    {active && <span className="w-1.5 h-1.5 rounded-full bg-[#7aa2f7]" />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Future settings placeholder */}
+        <div className="px-5 py-3">
+          <p className="text-[10px] text-[#3b3f5c] text-center">Boshqa sozlamalar tez kunda qo'shiladi</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UserMenu({ userPlan, onOpenPayment, onOpenSettings, alignRight }: {
+  userPlan: UserPlanInfo | null; onOpenPayment: () => void; onOpenSettings: () => void; alignRight?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -561,7 +643,7 @@ function UserMenu({ userPlan, onOpenPayment, alignRight }: { userPlan: UserPlanI
 
           {/* Nav items */}
           <div className="p-1.5 border-b border-[#1e1e2e]">
-            <MenuItem icon="⚙️" label="Sozlamalar" onClick={() => setOpen(false)} disabled />
+            <MenuItem icon="⚙️" label="Sozlamalar" onClick={() => { onOpenSettings(); setOpen(false); }} />
             <MenuItem icon="📖" label="Qo'llanma / Yordam" onClick={() => { window.open("https://t.me/uzcoder_support", "_blank"); setOpen(false); }} />
             <MenuItem icon="📣" label="Yangiliklar" onClick={() => { window.open("https://t.me/uzcoder_news", "_blank"); setOpen(false); }} />
           </div>
@@ -578,12 +660,12 @@ function UserMenu({ userPlan, onOpenPayment, alignRight }: { userPlan: UserPlanI
 
 // ─── Projects Panel ───────────────────────────────────────────────────────────
 function ProjectsPanel({
-  projects, activeProjectId, onSelect, onDelete, onNew, activeModelInfo, userPlan, onOpenPayment, mobileMode,
+  projects, activeProjectId, onSelect, onDelete, onNew, activeModelInfo, userPlan, onOpenPayment, onOpenSettings, mobileMode,
 }: {
   projects: { id: number; name: string }[]; activeProjectId: number | null;
   onSelect: (id: number) => void; onDelete: (id: number, e: React.MouseEvent) => void;
   onNew: () => void; activeModelInfo: typeof MODELS[0] | null;
-  userPlan: UserPlanInfo | null; onOpenPayment: () => void; mobileMode?: boolean;
+  userPlan: UserPlanInfo | null; onOpenPayment: () => void; onOpenSettings: () => void; mobileMode?: boolean;
 }) {
   return (
     <div className="flex flex-col h-full bg-[#0d0d1a]">
@@ -594,7 +676,7 @@ function ProjectsPanel({
               <div className="w-2 h-2 rounded-full bg-[#7aa2f7]" />
               <span className="text-xs font-bold tracking-widest text-[#7aa2f7]">UZCODER</span>
             </div>
-            <UserMenu userPlan={userPlan} onOpenPayment={onOpenPayment} />
+            <UserMenu userPlan={userPlan} onOpenPayment={onOpenPayment} onOpenSettings={onOpenSettings} />
           </div>
         )}
         <button onClick={onNew}
@@ -1094,7 +1176,8 @@ export default function WorkspacePage() {
   const [showNewFile, setShowNewFile]           = useState(false);
   const [selectedModel, setSelectedModel]       = useState<string | null>(null);
   const [showModelPicker, setShowModelPicker]   = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal]   = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [userPlan, setUserPlan]                 = useState<UserPlanInfo | null>(null);
   const [pendingSecretsRequest, setPendingSecretsRequest] = useState<{ secrets: SecretRequest[]; projectId: number } | null>(null);
   const messagesEndRef  = useRef<HTMLDivElement>(null);
@@ -1656,7 +1739,7 @@ export default function WorkspacePage() {
           <ProjectsPanel projects={projects} activeProjectId={activeProjectId}
             onSelect={handleSelectProject} onDelete={handleDeleteProject}
             onNew={() => setShowNewProject(true)} activeModelInfo={activeModelInfo}
-            userPlan={userPlan} onOpenPayment={() => setShowPaymentModal(true)} />
+            userPlan={userPlan} onOpenPayment={() => setShowPaymentModal(true)} onOpenSettings={() => setShowSettingsModal(true)} />
         </div>
 
         {activeProjectId ? (
@@ -1734,7 +1817,7 @@ export default function WorkspacePage() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               </a>
             )}
-            <UserMenu userPlan={userPlan} onOpenPayment={() => setShowPaymentModal(true)} alignRight />
+            <UserMenu userPlan={userPlan} onOpenPayment={() => setShowPaymentModal(true)} onOpenSettings={() => setShowSettingsModal(true)} alignRight />
           </div>
         </div>
         <div className="flex-1 min-h-0 overflow-hidden">
@@ -1742,7 +1825,7 @@ export default function WorkspacePage() {
             <ProjectsPanel projects={projects} activeProjectId={activeProjectId}
               onSelect={(id) => { handleSelectProject(id); setMobilePanel("chat"); }}
               onDelete={handleDeleteProject} onNew={() => setShowNewProject(true)} activeModelInfo={activeModelInfo}
-              userPlan={userPlan} onOpenPayment={() => setShowPaymentModal(true)} mobileMode />
+              userPlan={userPlan} onOpenPayment={() => setShowPaymentModal(true)} onOpenSettings={() => setShowSettingsModal(true)} mobileMode />
           ) : mobilePanel === "files" && activeProjectId ? (
             <FilesPanel {...filesPanelProps} />
           ) : mobilePanel === "chat" && activeProjectId ? chatPanel
@@ -1773,6 +1856,9 @@ export default function WorkspacePage() {
           setUserPlan((prev) => prev ? { ...prev, plan: "paid" } : { plan: "paid", freeMessagesUsed: 0 });
         }}
       />
+
+      {/* Settings modal */}
+      {showSettingsModal && <SettingsModal onClose={() => setShowSettingsModal(false)} />}
     </div>
   );
 }
