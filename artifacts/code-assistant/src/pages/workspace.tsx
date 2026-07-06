@@ -59,6 +59,7 @@ type MobilePanel = "projects" | "files" | "chat" | "editor" | "preview" | "shell
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const FREE_MODEL_ID    = "deepseek/deepseek-chat-v3-0324";
+const FREE_MODELS      = new Set([FREE_MODEL_ID, "google/gemini-2.5-flash"]);
 const FREE_MSG_LIMIT   = 3;
 
 const MODELS = [
@@ -67,7 +68,7 @@ const MODELS = [
   { id: "anthropic/claude-haiku-4.5",      label: "Claude Haiku 4.5",  color: "#9ece6a", power: 3, free: false },
   { id: "anthropic/claude-sonnet-4.5",     label: "Claude Sonnet 4.5", color: "#7aa2f7", power: 4, free: false },
   { id: "anthropic/claude-opus-4.5",       label: "Claude Opus 4.5",   color: "#bb9af7", power: 5, free: false },
-  { id: "google/gemini-2.5-flash",         label: "Gemini 2.5 Flash",  color: "#f7768e", power: 3, free: false },
+  { id: "google/gemini-2.5-flash",         label: "Gemini 2.5 Flash",  color: "#f7768e", power: 3, free: true  },
   { id: "google/gemini-2.5-pro",           label: "Gemini 2.5 Pro",    color: "#f7768e", power: 5, free: false },
   { id: "x-ai/grok-4.20",                  label: "Grok 4",            color: "#89b4fa", power: 5, free: false },
   { id: "mistralai/mistral-large-2512",    label: "Mistral Large",     color: "#bb9af7", power: 4, free: false },
@@ -1399,7 +1400,7 @@ export default function WorkspacePage() {
 
     // Client-side payment wall (UX shortcut — server enforces too)
     if (userPlan?.plan !== "paid") {
-      if (selectedModel !== FREE_MODEL_ID) { setShowPaymentModal(true); return; }
+      if (!FREE_MODELS.has(selectedModel)) { setShowPaymentModal(true); return; }
       if ((userPlan?.freeMessagesUsed ?? 0) >= FREE_MSG_LIMIT) { setShowPaymentModal(true); return; }
     }
 
